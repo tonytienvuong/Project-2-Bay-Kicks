@@ -51,6 +51,10 @@ function CreateAccountView({ setView }) {
   const [values, setValues] = useState(EMPTY)
   const [errors, setErrors] = useState({})
   const [createdAs, setCreatedAs] = useState('')
+  // Set by the server, not by the browser validation: duplicate login/email, a
+  // network failure, or a rule the browser let through.
+  const [serverError, setServerError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -100,14 +104,41 @@ function CreateAccountView({ setView }) {
     return found
   }
 
-  function handleSubmit(e) {
+  // Two rounds of validation on purpose: this one gives instant feedback, then
+  // the server checks everything again because a browser check is only a
+  // courtesy — curl can skip it entirely.
+  async function handleSubmit(e) {
     e.preventDefault()
     const found = validate()
     setErrors(found)
+    setServerError('')
 
-    if (Object.keys(found).length === 0) {
-      setCreatedAs(values.login)
-      setValues(EMPTY)
+    if (Object.keys(found).length > 0) return
+
+    setSubmitting(true)
+    try {
+      const response = await fetch('/api/createAccount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      })
+      const data = await response.json()
+
+      if (response.status === 201) {
+        // The rubric wants the user told to log in, not signed in automatically.
+        setCreatedAs(data.login || values.login)
+        setValues(EMPTY)
+      } else {
+        // 400 = a field is wrong, 409 = login or email already used. Both come
+        // back with a `fields` object keyed by field name.
+        setErrors(data.fields || {})
+        setServerError(data.error || 'Something went wrong. Try again.')
+      }
+    } catch {
+      // fetch() itself failed: server down, no network, CORS.
+      setServerError('Could not reach the server. Is it running?')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -118,7 +149,12 @@ function CreateAccountView({ setView }) {
           <h2 className="bk-section-title">Create account</h2>
           <p className="bk-section-sub">Login, password and email are required.</p>
 
-          {createdAs && <p className="bk-success">Account created for {createdAs}.</p>}
+          {createdAs && (
+            <p className="bk-success">
+              Account created for {createdAs}. <button className="bk-link" onClick={() => setView('account')}>Log in</button>
+            </p>
+          )}
+          {serverError && <p className="bk-error">{serverError}</p>}
 
           <form onSubmit={handleSubmit} noValidate>
             {FIELDS.map((field) => (
@@ -139,8 +175,8 @@ function CreateAccountView({ setView }) {
               </div>
             ))}
 
-            <button type="submit" className="btn btn-bk w-100">
-              Create account
+            <button type="submit" className="btn btn-bk w-100" disabled={submitting}>
+              {submitting ? 'Creating…' : 'Create account'}
             </button>
           </form>
 

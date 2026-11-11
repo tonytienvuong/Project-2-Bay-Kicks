@@ -19,6 +19,9 @@ function AccountView({ setView }) {
   const [values, setValues] = useState({ login: '', password: '' })
   const [errors, setErrors] = useState({})
   const [signedInAs, setSignedInAs] = useState('')
+  // The server's answer: wrong password, no such login, or a network failure.
+  const [serverError, setServerError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -39,15 +42,38 @@ function AccountView({ setView }) {
     return found
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     const found = validate()
     setErrors(found)
+    setServerError('')
 
-    // Object.keys().length === 0 means nothing went wrong.
-    if (Object.keys(found).length === 0) {
-      setSignedInAs(values.login)
-      setValues({ login: '', password: '' })
+    // Object.keys().length === 0 means nothing went wrong locally.
+    if (Object.keys(found).length > 0) return
+
+    setSubmitting(true)
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      })
+      const data = await response.json()
+
+      if (response.ok) {
+        // The server put the user in req.session and returned it. The session
+        // cookie does the rest — no token to store here.
+        setSignedInAs(data.user.login)
+        setValues({ login: '', password: '' })
+      } else {
+        // 401 covers both "no such login" and "wrong password", on purpose.
+        setServerError(data.error || 'Could not sign in.')
+      }
+    } catch {
+      // fetch() itself failed: server down, no network, CORS.
+      setServerError('Could not reach the server. Is it running?')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -59,6 +85,7 @@ function AccountView({ setView }) {
           <p className="bk-section-sub">Welcome back to Bay Kicks.</p>
 
           {signedInAs && <p className="bk-success">Signed in as {signedInAs}.</p>}
+          {serverError && <p className="bk-error">{serverError}</p>}
 
           <form onSubmit={handleSubmit} noValidate>
             <label className="form-label" htmlFor="ac-login">Login</label>
@@ -82,8 +109,8 @@ function AccountView({ setView }) {
             />
             {errors.password && <p className="bk-error">{errors.password}</p>}
 
-            <button type="submit" className="btn btn-bk w-100 mt-3">
-              Sign in
+            <button type="submit" className="btn btn-bk w-100 mt-3" disabled={submitting}>
+              {submitting ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
 

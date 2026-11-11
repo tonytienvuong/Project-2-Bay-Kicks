@@ -14,9 +14,18 @@ import CartView from './components/CartView'
 import AccountView from './components/AccountView'
 import CreateAccountView from './components/CreateAccountView'
 
+// The starting screen comes from the URL, so the page names the rubric uses work
+// as real links: /createAccount.html, /account, /cart, /shop, /checkout.
+function viewFromPath() {
+  const cleaned = window.location.pathname.replace(/\.html$/, '').replace(/\/+$/, '')
+  const name = cleaned.split('/').filter(Boolean).pop() || 'home'
+  const known = ['shop', 'cart', 'checkout', 'account', 'createAccount']
+  return known.includes(name) ? name : 'home'
+}
+
 function App() {
   // Which screen is showing. Changing it with setView re-draws the page.
-  const [view, setView] = useState('home')
+  const [view, setView] = useState(viewFromPath)
 
   // Which product the detail view is showing (null = none picked yet).
   const [selectedId, setSelectedId] = useState(null)

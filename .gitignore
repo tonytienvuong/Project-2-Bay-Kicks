@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# local secrets — never commit the Atlas password or session secret
+.env
+.env.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
