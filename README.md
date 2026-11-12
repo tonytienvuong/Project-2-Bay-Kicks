@@ -44,10 +44,11 @@ Then open http://localhost:3000.
     POST /api/login          {login,password}   -> 200 {ok,user} | 401 {error}
     POST /api/logout                            -> 200 {ok}
     GET  /api/me                                -> {user, cartLines}
-    POST /api/cart/add       {productId,qty}    -> {count, cart}
-    GET  /api/cart                              -> {cart, count, subtotal}
-    POST /api/cart/update    {productId,qty}    -> {count, cart}
-    POST /api/cart/remove    {productId}        -> {count, cart}
+    POST /api/cart/add       {productId,qty,size,color}  -> {cart,count,subtotal}
+    GET  /api/cart                                      -> {cart,count,subtotal}
+    POST /api/cart/update    {productId,qty,size,color}  -> {cart,count,subtotal}
+    POST /api/cart/remove    {productId,size,color}      -> {cart,count,subtotal}
+    POST /api/cart/clear                                -> {cart,count,subtotal}
     GET  /api/checkout                          -> {user, cart, subtotal, taxRate, tax, total}
     POST /api/checkout                          -> 201 {orderId, order}
     GET  /api/health                            -> server + database status
