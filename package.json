@@ -2,16 +2,20 @@
   "name": "bay-kicks-project2",
   "private": true,
   "version": "2.0.0",
-  "type": "module",
+  "description": "Bay Kicks — CS351 Project 2: React client + Node/Express server + MongoDB Atlas",
+  "main": "server/server.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite client",
+    "build": "vite build client",
+    "preview": "vite preview client",
     "lint": "oxlint",
-    "preview": "vite preview",
     "server": "node server/server.js",
-    "dev:server": "node --watch server/server.js"
+    "dev:server": "node --watch server/server.js",
+    "seed": "node server/seedProducts.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "body-parser": "^2.4.0",
     "bootstrap": "^5.3.8",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",

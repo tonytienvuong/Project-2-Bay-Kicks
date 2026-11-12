@@ -117,7 +117,7 @@ function CreateAccountView({ setView }) {
 
     setSubmitting(true)
     try {
-      const response = await fetch('/api/createAccount', {
+      const response = await fetch('/api/accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),

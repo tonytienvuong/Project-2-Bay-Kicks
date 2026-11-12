@@ -35,14 +35,10 @@ function ProductDetailView({ product, onAddToCart }) {
     if (!ready) return
 
     onAddToCart({
-      id: product.id,
-      name: product.name,
-      image: product.image,
+      productId: product.id,
+      qty,
       size,
       color,
-      quantity: qty,
-      unitPrice,
-      stock: product.quantityInStock,
     })
 
     setSize('')                     // reset so the next add starts clean

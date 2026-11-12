@@ -13,6 +13,19 @@ function ShopView({ products, onOpen }) {
   // 'page' is the page number being shown. useState so React redraws on change.
   const [page, setPage] = useState(1)
 
+  // The catalogue arrives from the server after the first paint, so show a short
+  // note instead of an empty grid while the request is in flight.
+  if (products.length === 0) {
+    return (
+      <section className="bk-section">
+        <div className="container text-center">
+          <h2 className="bk-section-title">Shop all sneakers</h2>
+          <p className="bk-section-sub">Loading the catalogue…</p>
+        </div>
+      </section>
+    )
+  }
+
   const pageCount = Math.ceil(products.length / PER_PAGE)
   const start = (page - 1) * PER_PAGE
   const visible = products.slice(start, start + PER_PAGE)
