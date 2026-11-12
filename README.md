@@ -34,7 +34,8 @@ the collection is empty. `npm run seed` does the same thing on its own.
         App.jsx                   which view is showing; loads products + cart
         api.js                    every fetch the app makes, one helper per endpoint
         components/               NavBar, HomeView, ShopView, ProductList, ProductCard,
-                                  ProductDetailView, CartView, CartItem, AccountView,
+                                  ProductDetailView, CartView, CartItem, CheckoutView,
+                                  AccountView (sign-in + dashboard),
                                   CreateAccountView
 
     server/                       the Express API
@@ -91,6 +92,19 @@ MongoDB Atlas (free M0 tier), database `baykicks`:
 `orders.userId` is the MongoDB `_id` of the user document that placed the order, which
 is the reference the rubric asks for. Passwords are bcrypt hashes, never plain text.
 Card numbers and CVVs are never stored — only the card type and the last four digits.
+
+## The customer flow
+
+    /createAccount  form posts to POST /api/accounts → "Account created. Please log in."
+    /account        sign in (POST /api/login), then the dashboard: your information,
+                    Edit account (PUT /api/account), View orders (GET /api/orders), Log out
+    /shop           products from GET /api/products; a product page adds to the cart
+    /cart           the session cart, quantity +/− and remove
+    /checkout       shipping + billing + payment, totals from GET /api/checkout;
+                    Place order posts to POST /api/orders and shows the confirmation
+
+The confirmation repeats the customer information, the addresses, the payment (card
+type + last four only), every item with productId and quantity, and the total with tax.
 
 ## Money
 

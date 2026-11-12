@@ -28,6 +28,7 @@ import ProductDetailView from './components/ProductDetailView'
 import CartView from './components/CartView'
 import AccountView from './components/AccountView'
 import CreateAccountView from './components/CreateAccountView'
+import CheckoutView from './components/CheckoutView'
 
 // The starting screen comes from the URL, so the page names the rubric uses work as
 // real links: /createAccount.html, /account, /cart, /shop.
@@ -168,12 +169,19 @@ function App() {
 
         {view === 'createAccount' && <CreateAccountView setView={setView} />}
 
+        {/* Checkout reads the cart from the server itself; the only thing App needs to
+            do afterwards is empty the nav badge, because the order emptied the cart. */}
+        {view === 'checkout' && (
+          <CheckoutView setView={setView} onOrderPlaced={() => setCart([])} />
+        )}
+
         {/* every other view is still a placeholder */}
         {view !== 'home' &&
           view !== 'shop' &&
           view !== 'detail' &&
           view !== 'cart' &&
           view !== 'account' &&
+          view !== 'checkout' &&
           view !== 'createAccount' && (
             <div className="container py-5">
               <h2 className="text-capitalize">{view}</h2>

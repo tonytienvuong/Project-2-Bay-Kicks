@@ -69,9 +69,15 @@ function CartView({ items, error, onIncrease, onDecrease, onRemove, setView }) {
             <strong>{itemCount}</strong>
           </div>
 
-          <button className="btn btn-bk w-100 mt-3" onClick={() => setView('shop')}>
+          <button className="btn btn-bk w-100 mt-3" onClick={() => setView('checkout')}>
+            Checkout
+          </button>
+          <button className="btn btn-bk-outline w-100 mt-2" onClick={() => setView('shop')}>
             Keep shopping
           </button>
+          <p className="text-muted small mb-0 mt-3">
+            Sales tax and the final total are shown on the checkout page.
+          </p>
         </div>
       </div>
     </section>

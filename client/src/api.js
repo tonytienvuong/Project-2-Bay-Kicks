@@ -104,3 +104,17 @@ export function fetchCheckout() {
 export function placeOrder(payload) {
   return request('/api/orders', { method: 'POST', body: payload })
 }
+
+/* ---------- orders ---------- */
+
+// This user's past orders, newest first.
+export function fetchOrders() {
+  return request('/api/orders')
+}
+
+/* ---------- account, edit ---------- */
+
+// Change the profile: { email, firstName, lastName, phone, shippingAddress }.
+export function updateAccount(values) {
+  return request('/api/account', { method: 'PUT', body: values })
+}

@@ -95,6 +95,20 @@
   color: #fff;
 }
 
+/* White button with a black outline — the secondary action next to .btn-bk.
+   Used for "Keep shopping", "Edit account", "Back to cart" and Cancel. */
+.btn-bk-outline {
+  background: #fff;
+  border: 1px solid var(--bk-ink);
+  color: var(--bk-ink);
+  font-weight: 600;
+}
+.btn-bk-outline:hover,
+.btn-bk-outline:focus {
+  background: #f6f7f9;
+  color: var(--bk-ink);
+}
+
 /* ---------- sections (shop, detail, cart...) ---------- */
 .bk-section {
   padding: 3rem 0;
@@ -409,6 +423,47 @@
   color: var(--bk-ink);
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* ---------- checkout + dashboard ---------- */
+/* A form card that fills its grid column instead of sitting narrow in the middle.
+   .bk-form-card caps at 28rem, which is right for a login box and too tight for the
+   checkout form, so those panels add this class. */
+.bk-card-wide {
+  max-width: none;
+}
+
+/* the row of buttons under "My account" */
+.bk-account-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* one past order in the order history */
+.bk-order {
+  border: 1px solid var(--bk-line);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.bk-order-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.bk-order-items {
+  margin: 0 0 0.5rem;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+.bk-order-total {
+  border-top: 1px solid var(--bk-line);
+  padding-top: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 /* ---------- pagination ---------- */
