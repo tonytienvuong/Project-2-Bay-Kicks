@@ -3,6 +3,9 @@
 A full-stack sneaker storefront: a React single-page app talking to a Node + Express
 REST API, with users, carts and orders stored in MongoDB Atlas.
 
+**Live:** https://bay-kicks-1039039875318.us-central1.run.app
+**Documentation:** https://tonytienvuong.github.io/Project-2-Bay-Kicks/
+
 The structure and the code style follow what the course taught: separate `client/`
 and `server/` directories, Express routes → controllers, `body-parser` for request
 bodies, one MongoClient opened in `startServer()`, and bcrypt password hashes.
