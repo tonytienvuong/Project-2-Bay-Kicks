@@ -7,7 +7,7 @@ Customers can browse sneakers, create accounts, manage shopping carts, and place
 **Live Website:** https://bay-kicks-1039039875318.us-central1.run.app  
 **Documentation:** https://tonytienvuong.github.io/Project-2-Bay-Kicks/
 
-**Group 7:** Tien Vuong, Benjamin Samok, Patrick Simpauco  
+**Group 7:** Tien Vuong, Benjamin Samok
 **Course:** CS351 — Fall 2026
 
 ## Tech Stack
