@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture — Bay Kicks CS351 Project 2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="brand">Bay Kicks <span>· CS351 Project 2</span></div>
+  <nav class="site">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html" aria-current="page">Architecture</a>
+    <a href="api.html">API</a>
+    <a href="database.html">Database</a>
+    <a href="code-tour.html">Code tour</a>
+    <a href="setup.html">Run &amp; deploy</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Architecture</h1>
+  <p class="lead">Three layers, one deploy: a React bundle in the browser, an Express
+  server on Cloud Run, and MongoDB Atlas outside the container.</p>
+
+  <h2>The three layers</h2>
+  <pre><code>browser  ──fetch('/api/...')──▶  Express on Cloud Run  ──MongoDB driver──▶  Atlas
+React 19                          routes → controllers                 baykicks database
+served as static files            sessions in memory                    products, users, orders</code></pre>
+
+  <h3>1. The browser</h3>
+  <p>The React app is a single page. <code>App.jsx</code> holds which view is showing
+  (<code>home</code>, <code>shop</code>, <code>detail</code>, <code>cart</code>,
+  <code>checkout</code>, <code>account</code>, <code>createAccount</code>) and reads that
+  from the URL pathname on first load. There is no router library: switching views is a
+  state change, so the paths <code>/shop</code> and <code>/cart</code> only matter when the
+  browser first asks for the page.</p>
+  <p>Every call to the server goes through <code>client/src/api.js</code> — one small
+  function per endpoint, each one a <code>fetch</code> with
+  <code>credentials: 'include'</code> so the session cookie travels with the request.</p>
+
+  <h3>2. The server</h3>
+  <p><code>server/app.js</code> wires five things in a deliberate order:</p>
+  <pre><code>body-parser  →  express-session  →  /api routes  →  express.static(client/dist)  →  index.html fallback</code></pre>
+  <p>That order is why one URL can serve both halves of the project. A request for
+  <code>/api/products</code> is answered by a controller and never reaches the static
+  handler; a request for <code>/shop</code> matches no file in <code>client/dist</code>, so
+  it falls through to <code>index.html</code> and React draws the shop view.</p>
+  <p>Inside the API the code is split the way the course teaches it:
+  <code>routes/</code> maps a URL and method to a function, <code>controllers/</code> does
+  the work, and <code>middleware/requireLogin.js</code> guards the routes that need a
+  signed-in user.</p>
+
+  <h3>3. The database</h3>
+  <p><code>server/db/databaseConnection.js</code> opens <strong>one</strong>
+  <code>MongoClient</code> when the process starts and hands the same connection to every
+  request. Opening a client inside each controller would create a new connection pool per
+  request and exhaust the free Atlas tier. The pool is closed on
+  <code>SIGINT</code>/<code>SIGTERM</code>, which is what Cloud Run sends when it stops an
+  instance.</p>
+
+  <div class="note">
+    <strong>One instance, many requests.</strong> Cloud Run can run several copies of the
+    Express app at once; each copy has its own connection pool and its own in-memory
+    session store. That is acceptable here — the default session store is fine for a class
+    project and is worth saying out loud in the demo.
+  </div>
+
+  <h2>What happens on one request</h2>
+  <p>Adding a pair of shoes to the cart, end to end:</p>
+  <ol>
+    <li><code>ProductDetailView.jsx</code> calls <code>api.addToCart({ productId, size, color, qty })</code>.</li>
+    <li>The browser sends <code>POST /api/cart</code> with the session cookie.</li>
+    <li><code>cartRoutes.js</code> hands it to <code>cartController.addToCart</code>.</li>
+    <li>The controller looks the product up in the <code>products</code> collection — the
+    price it uses comes from the database, never from the request body.</li>
+    <li>It finds the matching line by product + size + colour, increments the quantity
+    (capped at the product's stock), and writes the whole cart back to
+    <code>req.session.cart</code>.</li>
+    <li>It answers <code>{ items, count, subtotal }</code>; the nav bar badge and the cart
+    page redraw from that answer.</li>
+  </ol>
+  <p>The same shape applies to checkout: read the session cart, re-price it from
+  <code>products</code>, compute subtotal, 9.5% tax and total, insert one document into
+  <code>orders</code> carrying <code>userId</code>, and only then empty the session cart.</p>
+</main>
+
+<footer class="site">
+  CS351 Website Development · Project 2 · Group 7 · documentation published with GitHub Pages
+</footer>
+
+</body>
+</html>

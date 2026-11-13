@@ -1,0 +1,17 @@
+# .gcloudignore — what `gcloud run deploy --source .` uploads.
+#
+# Without this file gcloud falls back to .gitignore rules. That happens to work here,
+# but being explicit keeps the upload small and keeps .env off the wire.
+.gcloudignore
+.git
+.gitignore
+node_modules
+client/node_modules
+.env
+.env.local
+dist
+client/dist
+docs
+*.log
+.DS_Store
+README.md

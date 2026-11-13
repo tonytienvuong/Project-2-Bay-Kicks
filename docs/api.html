@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API — Bay Kicks CS351 Project 2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="brand">Bay Kicks <span>· CS351 Project 2</span></div>
+  <nav class="site">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="api.html" aria-current="page">API</a>
+    <a href="database.html">Database</a>
+    <a href="code-tour.html">Code tour</a>
+    <a href="setup.html">Run &amp; deploy</a>
+  </nav>
+</header>
+
+<main>
+  <h1>The API</h1>
+  <p class="lead">Everything lives under <code>/api</code>. Requests and responses are JSON;
+  the routes also accept urlencoded bodies so a plain HTML form can post to them.</p>
+
+  <h2>Products</h2>
+  <table>
+    <tr><th>Method and path</th><th>What it does</th><th>Answers</th></tr>
+    <tr>
+      <td><code>GET /api/products</code></td>
+      <td>Whole catalogue from the <code>products</code> collection</td>
+      <td>200 — array of 25 products</td>
+    </tr>
+    <tr>
+      <td><code>GET /api/products/:id</code></td>
+      <td>One product by its numeric id</td>
+      <td>200 — product · 404 if there is no such id</td>
+    </tr>
+  </table>
+
+  <h2>Accounts</h2>
+  <table>
+    <tr><th>Method and path</th><th>Body</th><th>Answers</th></tr>
+    <tr>
+      <td><code>POST /api/accounts</code><br><small>(alias: <code>POST /api/createAccount</code>)</small></td>
+      <td><code>{login, email, password, firstName, lastName, phone, street, city, state, zip}</code></td>
+      <td>201 created · 400 with per-field errors · 409 login or email already used</td>
+    </tr>
+    <tr>
+      <td><code>POST /api/login</code></td>
+      <td><code>{login, password}</code></td>
+      <td>200 <code>{ok, user}</code> · 401 wrong login or password</td>
+    </tr>
+    <tr>
+      <td><code>POST /api/logout</code></td>
+      <td>—</td>
+      <td>200 — destroys the session</td>
+    </tr>
+    <tr>
+      <td><code>GET /api/account</code></td>
+      <td>— (login required)</td>
+      <td>200 — public profile fields · 401 when signed out</td>
+    </tr>
+    <tr>
+      <td><code>PUT /api/account</code></td>
+      <td>any of the profile fields (login required)</td>
+      <td>200 updated · 400 invalid · 409 new login or email already used</td>
+    </tr>
+  </table>
+
+  <h2>Cart — the Express session</h2>
+  <p>No cart id is ever sent by the browser. The cart <em>is</em> <code>req.session.cart</code>,
+  found through the signed session cookie, so a cart belongs to a browser, not to a login.</p>
+  <table>
+    <tr><th>Method and path</th><th>Body</th><th>Answers</th></tr>
+    <tr>
+      <td><code>GET /api/cart</code></td>
+      <td>—</td>
+      <td>200 <code>{items, count, subtotal}</code></td>
+    </tr>
+    <tr>
+      <td><code>POST /api/cart</code></td>
+      <td><code>{productId, size, color, qty}</code></td>
+      <td>200 <code>{items, count}</code> · 400 unknown product, missing size, bad quantity</td>
+    </tr>
+    <tr>
+      <td><code>PUT /api/cart/:itemId</code></td>
+      <td><code>{qty, size, color}</code></td>
+      <td>200 <code>{items, count}</code> · 404 no such line · 400 quantity out of range</td>
+    </tr>
+    <tr>
+      <td><code>DELETE /api/cart/:itemId</code></td>
+      <td><code>size</code> and <code>color</code> when the product is in twice</td>
+      <td>200 <code>{items, count}</code> · 404 no such line</td>
+    </tr>
+  </table>
+  <p><code>:itemId</code> is the product id. Because the same product can sit in the cart in
+  two sizes, <code>size</code> and <code>color</code> identify which line is meant.</p>
+
+  <h2>Checkout and orders</h2>
+  <table>
+    <tr><th>Method and path</th><th>Body</th><th>Answers</th></tr>
+    <tr>
+      <td><code>GET /api/checkout</code></td>
+      <td>— (login required)</td>
+      <td>200 <code>{user, cart, count, subtotal, taxRate, tax, shippingCost, total}</code></td>
+    </tr>
+    <tr>
+      <td><code>POST /api/orders</code></td>
+      <td><code>{shippingAddress, billingAddress, payment:{cardType, last4}}</code></td>
+      <td>201 <code>{ok, orderId, order}</code> · 400 empty cart or bad address (login required)</td>
+    </tr>
+    <tr>
+      <td><code>GET /api/orders</code></td>
+      <td>— (login required)</td>
+      <td>200 — this user's orders, newest first</td>
+    </tr>
+    <tr>
+      <td><code>GET /api/orders/:id</code></td>
+      <td>— (login required)</td>
+      <td>200 — one of this user's orders · 404 if it is not theirs</td>
+    </tr>
+  </table>
+
+  <h2>Health</h2>
+  <p><code>GET /api/health</code> reports whether the server is up, whether the database is
+  connected, how many lines are in the session cart and who is signed in. It is the fastest
+  way to tell a broken deploy apart from a broken browser session.</p>
+
+  <div class="note">
+    <strong>Errors are JSON, always.</strong> An unknown <code>/api</code> path answers
+    <code>404 {"error":"No such API route: ..."}</code> rather than the React page, so a typo
+    in a <code>fetch()</code> is visible instead of silent.
+  </div>
+</main>
+
+<footer class="site">
+  CS351 Website Development · Project 2 · Group 7 · documentation published with GitHub Pages
+</footer>
+
+</body>
+</html>

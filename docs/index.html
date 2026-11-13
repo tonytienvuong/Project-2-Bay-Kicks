@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bay Kicks — CS351 Project 2 documentation</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="brand">Bay Kicks <span>· CS351 Project 2</span></div>
+  <nav class="site">
+    <a href="index.html" aria-current="page">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="api.html">API</a>
+    <a href="database.html">Database</a>
+    <a href="code-tour.html">Code tour</a>
+    <a href="setup.html">Run &amp; deploy</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Bay Kicks — a full-stack sneaker storefront</h1>
+  <p class="lead">A React single-page app talking to a Node + Express REST API, with users,
+  session carts and orders stored in MongoDB Atlas. Group 7 — Tien Vuong, Benjamin Samok,
+  Patrick Simpauco. CS351-02-1, Dr. Grewe, Fall 2026.</p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Front end</h3>
+      <p>React 19 + Vite, Bootstrap 5. Product list, product detail, cart, account
+      dashboard and checkout — all one page that swaps views.</p>
+    </div>
+    <div class="card">
+      <h3>Back end</h3>
+      <p>Express 5 with routes → controllers, `body-parser`, `express-session`, and one
+      shared MongoClient opened in `startServer()`.</p>
+    </div>
+    <div class="card">
+      <h3>Data</h3>
+      <p>MongoDB Atlas: <code>products</code>, <code>users</code>, <code>orders</code>.
+      Passwords are bcrypt hashes; cards are stored as type + last four only.</p>
+    </div>
+  </div>
+
+  <h2>What this documentation covers</h2>
+  <ul class="plain">
+    <li><a href="architecture.html">Architecture</a> — how one Cloud Run service serves both
+    the API and the site, and what happens on a single request.</li>
+    <li><a href="api.html">API</a> — every endpoint, its body, and its responses.</li>
+    <li><a href="database.html">Database</a> — the three collections and the exact shape of a
+    document in each.</li>
+    <li><a href="code-tour.html">Code tour</a> — file by file, the function that carries each
+    rubric item, and why it is written that way.</li>
+    <li><a href="setup.html">Run &amp; deploy</a> — local setup, the environment variables, and
+    the single Cloud Run deploy.</li>
+  </ul>
+
+  <h2>The customer flow</h2>
+  <pre><code>/createAccount   form → POST /api/accounts        → "Account created. Please log in."
+/account         form → POST /api/login           → dashboard: your info, edit, orders, log out
+/shop            GET  /api/products               → 25 products from MongoDB
+/product/:id     GET  /api/products/:id           → pick size + colour, POST /api/cart
+/cart            GET  /api/cart                   → quantity +/−, remove
+/checkout        GET  /api/checkout               → subtotal, 9.5% tax, total
+                 POST /api/orders                 → order document, confirmation page</code></pre>
+
+  <div class="note">
+    <strong>Where the state lives.</strong> The cart and the signed-in user are held in the
+    Express session on the server, not in the browser's localStorage. The React app asks
+    <code>GET /api/cart</code> after every change and mirrors what the server says.
+  </div>
+
+  <h2>Points of interest for anyone reading the code</h2>
+  <ul class="plain">
+    <li>The cart re-prices every line from the <code>products</code> collection on each call,
+    so a tampered price in the request body cannot change a total.</li>
+    <li>Creating an account checks login <em>and</em> email uniqueness in a single query, and
+    re-runs all the client-side validation on the server.</li>
+    <li>The order document stores <code>userId</code> — the MongoDB <code>_id</code> of the
+    user who placed it — which is the reference back to <code>users</code>.</li>
+    <li>Checkout refuses an empty cart, and the cart is emptied only after the order insert
+    succeeds.</li>
+  </ul>
+</main>
+
+<footer class="site">
+  CS351 Website Development · Project 2 · Group 7 · documentation published with GitHub Pages
+</footer>
+
+</body>
+</html>

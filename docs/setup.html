@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run &amp; deploy — Bay Kicks CS351 Project 2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="brand">Bay Kicks <span>· CS351 Project 2</span></div>
+  <nav class="site">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="api.html">API</a>
+    <a href="database.html">Database</a>
+    <a href="code-tour.html">Code tour</a>
+    <a href="setup.html" aria-current="page">Run &amp; deploy</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Run it, deploy it</h1>
+  <p class="lead">Two commands locally, one deploy to Cloud Run. The only thing you must
+  supply is a MongoDB Atlas connection string.</p>
+
+  <h2>Prerequisites</h2>
+  <ul class="plain">
+    <li>Node.js 20 or newer</li>
+    <li>A MongoDB Atlas account with a free M0 cluster, a database user, and this machine's IP
+    allowed</li>
+    <li>The Google Cloud SDK (<code>gcloud</code>), signed in, for the deploy</li>
+  </ul>
+
+  <h2>1. Configure</h2>
+  <p>Copy the example settings file and fill in the connection string:</p>
+  <pre><code>cp .env.example .env</code></pre>
+  <pre><code>MONGODB_URI=mongodb+srv://&lt;user&gt;:&lt;password&gt;@&lt;cluster&gt;.mongodb.net/?retryWrites=true&amp;w=majority
+MONGODB_DB=baykicks
+SESSION_SECRET=some-long-random-string
+PORT=3000</code></pre>
+  <p><code>.env</code> is in <code>.gitignore</code> and <code>.dockerignore</code> — it never
+  goes to GitHub and never goes into the image.</p>
+
+  <h2>2. Install, build, run</h2>
+  <pre><code>npm install
+npm run build      # builds the React app into client/dist
+npm run server     # Express serves the API and the built app on :3000</code></pre>
+  <p>Open <a href="http://localhost:3000">http://localhost:3000</a>. On the first start the
+  <code>products</code> collection is seeded from <code>server/data/products.json</code> if it
+  is empty; <code>npm run seed</code> does the same thing on demand.</p>
+  <p>For live reload while editing React, run <code>npm run dev</code> in a second terminal —
+  Vite proxies <code>/api</code> to port 3000, so both halves stay in sync.</p>
+
+  <h2>3. Deploy to Cloud Run</h2>
+  <p>One service serves the API and the built React app; Atlas stays external.</p>
+  <pre><code>gcloud run deploy bay-kicks --source . \
+  --region us-central1 --allow-unauthenticated \
+  --env-vars-file /tmp/bay-kicks-env.yaml</code></pre>
+  <p>That YAML file holds the same three settings from <code>.env</code>
+  (<code>MONGODB_URI</code>, <code>MONGODB_DB</code>, <code>SESSION_SECRET</code>) and is
+  deleted after the deploy.</p>
+
+  <div class="note">
+    <strong>Why a Dockerfile instead of just the source.</strong> <code>client/dist</code> is
+    gitignored, so a deployed copy of the repository has no built React app. The
+    <code>Dockerfile</code>'s first stage runs <code>npm run build</code> inside the image, and
+    the second stage ships only the server, its production dependencies and the built files.
+  </div>
+
+  <h2>4. Check the live service</h2>
+  <pre><code>curl -s https://&lt;service-url&gt;/api/health          # {"ok":true,"db":{"connected":true,...}}
+curl -s -o /dev/null -w '%{http_code}\n' https://&lt;service-url&gt;/api/products   # 200</code></pre>
+  <p>If the page loads but every product call fails, the container cannot reach Atlas: add
+  <code>0.0.0.0/0</code> to Atlas → Network Access for the length of the demo and remove it
+  afterwards. If <code>/api/health</code> says the database is not connected, read the reason
+  it prints — it carries the driver's own message.</p>
+
+  <h2>Troubleshooting</h2>
+  <table>
+    <tr><th>Symptom</th><th>Cause</th></tr>
+    <tr>
+      <td>Blank page, or 404 on <code>/assets/*.js</code></td>
+      <td>The React build is missing from the image — rebuild with the Dockerfile</td>
+    </tr>
+    <tr>
+      <td>Every page shows the home view</td>
+      <td>Normal for a URL other than the ones App.jsx reads; navigate from inside the app</td>
+    </tr>
+    <tr>
+      <td>Cart empties after a restart</td>
+      <td>Expected — the session store is in memory</td>
+    </tr>
+    <tr>
+      <td>401 on <code>/api/checkout</code></td>
+      <td>Not signed in; sign in first, checkout needs a user to attach the order to</td>
+    </tr>
+  </table>
+</main>
+
+<footer class="site">
+  CS351 Website Development · Project 2 · Group 7 · documentation published with GitHub Pages
+</footer>
+
+</body>
+</html>

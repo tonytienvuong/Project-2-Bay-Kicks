@@ -1,0 +1,16 @@
+# .dockerignore — files that must not go into the image.
+#
+# .env is the important one: the Atlas password and the session secret come from the
+# Cloud Run service's environment variables, so the file itself never leaves this laptop.
+node_modules
+client/node_modules
+.env
+.env.local
+.git
+.gitignore
+.github
+dist
+client/dist
+docs
+*.log
+.DS_Store

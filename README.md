@@ -24,6 +24,47 @@ Then open http://localhost:3000.
 The first start seeds the `products` collection from `server/data/products.json` if
 the collection is empty. `npm run seed` does the same thing on its own.
 
+## Deploy it (Google Cloud Run)
+
+The whole app ships as **one Cloud Run service**: the Express server answers `/api/*`
+and serves the built React files at the same URL. MongoDB Atlas stays external.
+
+The build is not committed. `dist/` and `client/dist/` are in `.gitignore` (and in
+`.dockerignore`), so the image builds the React app itself — that is what the first
+stage of the `Dockerfile` is for. A deploy that runs but serves a blank page or 404s
+on `/assets/*` is a missing build, not a routing bug.
+
+1. Build the image and deploy from this folder:
+
+       gcloud run deploy bay-kicks --source . --region us-central1 \
+         --allow-unauthenticated \
+         --env-vars-file /tmp/bay-kicks-env.yaml
+
+   `/tmp/bay-kicks-env.yaml` is a temporary copy of the three settings Cloud Run needs,
+   taken from `.env`:
+
+       MONGODB_URI: "mongodb+srv://..."
+       MONGODB_DB: "baykicks"
+       SESSION_SECRET: "..."
+
+   Delete that file after the deploy — it is a second plaintext copy of the password.
+
+2. In Atlas → Network Access, a Cloud Run instance connects from a Google IP, so the
+   allowlist needs an entry during the demo. Add `0.0.0.0/0` (Atlas offers 1 hour or
+   6 hours) before testing the live URL, and remove it afterwards. Without it the site
+   loads but every data call fails.
+
+3. Check the live URL with the API, not just the page:
+
+       curl -s -o /dev/null -w '%{http_code}\n' https://<service-url>/api/products   # 200
+       curl -s https://<service-url>/api/health                                      # {"ok":true,...}
+
+   `GET /api/products` returning 200 with 25 items proves Express, the static build and
+   Atlas are all working in the container.
+
+Local secrets never go into the image: `.env` is in `.gitignore` and `.dockerignore`,
+and the Cloud Run service gets the same three values as environment variables.
+
 ## Layout
 
     client/                       the React app (Vite root)

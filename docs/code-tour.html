@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code tour — Bay Kicks CS351 Project 2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="brand">Bay Kicks <span>· CS351 Project 2</span></div>
+  <nav class="site">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="api.html">API</a>
+    <a href="database.html">Database</a>
+    <a href="code-tour.html" aria-current="page">Code tour</a>
+    <a href="setup.html">Run &amp; deploy</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Code tour</h1>
+  <p class="lead">Where each piece of the project lives, and which function carries which
+  requirement. Start here if you are reading the repository for the first time.</p>
+
+  <h2>The shape of the repository</h2>
+  <pre><code>client/        the React app (Vite root)
+  src/App.jsx            which view is showing; loads products and the cart
+  src/api.js             one fetch helper per endpoint
+  src/components/        NavBar, HomeView, ShopView, ProductList, ProductCard,
+                         ProductDetailView, CartView, CartItem, CheckoutView,
+                         AccountView, CreateAccountView
+server/        the Express API
+  server.js              startServer(): connect MongoDB, seed products, listen
+  app.js                 body-parser, sessions, routes, static build, fallback
+  routes/                accountRoutes, productRoutes, cartRoutes, orderRoutes
+  controllers/           accountController, productController, cartController, orderController
+  middleware/            requireLogin
+  db/databaseConnection.js   the single MongoClient
+  data/products.json     the catalogue used once, to seed the collection
+docs/          this documentation site (published with GitHub Pages)</code></pre>
+
+  <h2>Server files, one at a time</h2>
+
+  <h3><code>server/server.js</code></h3>
+  <p><code>startServer()</code> is the whole startup story: load <code>.env</code>, connect to
+  Atlas once, seed <code>products</code> if the collection is empty, then
+  <code>app.listen(PORT)</code>. The project page asks for the connection to be made here and
+  reused, rather than opened per request. The same file registers the shutdown handler that
+  closes the pool on <code>SIGINT</code>/<code>SIGTERM</code>.</p>
+
+  <h3><code>server/app.js</code></h3>
+  <p>Wiring only, in five ordered steps: bodies, sessions, <code>/api</code> routes, the static
+  React build, then the <code>index.html</code> fallback. Two small things worth noticing: a
+  JSON 404 for unknown API paths, and the four-argument error handler at the bottom that turns
+  anything a controller passes to <code>next(err)</code> into a JSON error instead of a crash.</p>
+
+  <h3><code>server/db/databaseConnection.js</code></h3>
+  <p><code>connectToDatabase()</code> creates the client with
+  <code>ServerApiVersion.v1</code> and pings <code>admin</code> straight away, so a bad password
+  or a blocked IP fails at startup with a readable message instead of failing later inside a
+  controller. <code>getCollection(name)</code> hands out <code>users</code>,
+  <code>products</code> and <code>orders</code>; <code>getConnectionState()</code> is what
+  <code>/api/health</code> reports.</p>
+
+  <h3><code>server/middleware/requireLogin.js</code></h3>
+  <p>Fourteen lines that decide whether a protected route runs: if
+  <code>req.session.user</code> is missing, answer 401 with a message; otherwise call
+  <code>next()</code>. Mounted on <code>/api/account</code>, <code>/api/checkout</code> and every
+  <code>/api/orders</code> route.</p>
+
+  <h2>Rubric item → the code that earns it</h2>
+  <table>
+    <tr><th>Requirement</th><th>Where it is implemented</th></tr>
+    <tr>
+      <td>MongoDB database with <code>users</code> and <code>orders</code></td>
+      <td><code>databaseConnection.js</code> + the collections used in every controller; the
+      database name comes from <code>MONGODB_DB</code></td>
+    </tr>
+    <tr>
+      <td>createAccount, validated again on the server, login and email unique</td>
+      <td><code>accountController.validateSignup()</code> then
+      <code>createAccount()</code> — one <code>$or</code> query for both uniqueness checks
+    </tr>
+    <tr>
+      <td>Login checked against the stored password</td>
+      <td><code>accountController.login()</code> — bcrypt compare, then
+      <code>req.session.user = {_id, login, email, firstName}</code></td>
+    </tr>
+    <tr>
+      <td>Add to cart in the Express session, count on the nav bar</td>
+      <td><code>cartController.addToCart()</code> writes <code>req.session.cart</code>;
+      <code>NavBar.jsx</code> renders <code>count</code> from <code>GET /api/cart</code></td>
+    </tr>
+    <tr>
+      <td>Cart page with quantity up/down and remove</td>
+      <td><code>cartController.updateCartItem()</code> and <code>removeCartItem()</code>;
+      <code>CartView.jsx</code> / <code>CartItem.jsx</code> drive them</td>
+    </tr>
+    <tr>
+      <td>Checkout refuses an empty cart, writes an order with a user reference, shows the
+      total with tax</td>
+      <td><code>orderController.createOrder()</code> — re-prices from
+      <code>products</code>, inserts <code>userId</code> + <code>items</code> +
+      <code>subtotal/tax/total</code>, empties the session cart, returns the order;
+      <code>CheckoutView.jsx</code> renders the confirmation</td>
+    </tr>
+    <tr>
+      <td>Password security</td>
+      <td><code>bcrypt.hash()</code> on create, <code>bcrypt.compare()</code> on login —
+      <code>passwordHash</code> is the only password-shaped field in <code>users</code></td>
+    </tr>
+    <tr>
+      <td>Card data not stored</td>
+      <td><code>orderController.readPayment()</code> keeps <code>cardType</code> and
+      <code>last4</code> and drops the rest</td>
+    </tr>
+    <tr>
+      <td>One deploy serving both halves</td>
+      <td><code>Dockerfile</code> — stage 1 runs <code>npm run build</code>, stage 2 ships
+      <code>server/</code> and the built <code>client/dist</code></td>
+    </tr>
+  </table>
+
+  <h2>Client files worth opening first</h2>
+  <h3><code>client/src/api.js</code></h3>
+  <p>Everything the browser sends lives here, one function per endpoint, each returning parsed
+  JSON and throwing the server's error message when a response is not ok. When a form "does
+  nothing", this file is where to look first.</p>
+
+  <h3><code>client/src/App.jsx</code></h3>
+  <p>Holds <code>view</code>, the product list, and the cart summary; passes them down as
+  props. It reads <code>window.location.pathname</code> on first load so <code>/shop</code>,
+  <code>/cart</code> and <code>/checkout</code> open the right view.</p>
+
+  <h3><code>client/src/components/ProductDetailView.jsx</code></h3>
+  <p>The one place a cart line is created. The Add to Cart button stays disabled until both a
+  size and a colour are chosen — matching the product page rule from Project 1 — and the
+  quantity is clamped to what the product has in stock.</p>
+
+  <div class="note">
+    <strong>AI assistance.</strong> The Project 2 server, the client/server split and this
+    documentation were written with AI assistance, then read, run and explained by the group.
+    The disclosure page on the project Wiki lists what was asked for and what was changed.
+  </div>
+</main>
+
+<footer class="site">
+  CS351 Website Development · Project 2 · Group 7 · documentation published with GitHub Pages
+</footer>
+
+</body>
+</html>

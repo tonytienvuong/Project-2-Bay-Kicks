@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database — Bay Kicks CS351 Project 2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="brand">Bay Kicks <span>· CS351 Project 2</span></div>
+  <nav class="site">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="api.html">API</a>
+    <a href="database.html" aria-current="page">Database</a>
+    <a href="code-tour.html">Code tour</a>
+    <a href="setup.html">Run &amp; deploy</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Database</h1>
+  <p class="lead">One MongoDB Atlas database, <code>baykicks</code>, with three collections.
+  There is no <code>products.json</code> in the running app — the catalogue is seeded into
+  the database once and read from there after that.</p>
+
+  <h2>products</h2>
+  <p>Seeded from <code>server/data/products.json</code> by
+  <code>server/seedProducts.js</code> the first time the server starts against an empty
+  collection. 25 documents.</p>
+  <pre><code>{
+  id: 4,                          // the product id used in every URL and cart line
+  sku: "EMB-001",
+  name: "Embarcadero Knit",
+  brand: "Bay Kicks",
+  price: 109.99,
+  salePrice: 84.99,               // null when the product is not on sale
+  sizes: ["7", "8", "9", "10"],
+  colors: ["Black", "Bone"],
+  quantityInStock: 12,
+  ...
+}</code></pre>
+
+  <h2>users</h2>
+  <p>One document per account. Written by <code>POST /api/accounts</code>, read by
+  <code>POST /api/login</code>.</p>
+  <pre><code>{
+  _id: ObjectId("..."),
+  login: "tvuong",                // unique, case-insensitive
+  email: "tvuong@example.com",    // unique, case-insensitive
+  passwordHash: "$2b$10$...",     // bcrypt — the password itself is never stored
+  firstName: "Tien",
+  lastName: "Vuong",
+  phone: "5105551212",
+  shippingAddress: { street: "1 Main St", city: "Hayward", state: "CA", zip: "94541" },
+  createdAt: ISODate("2026-11-12T...")
+}</code></pre>
+  <p>Uniqueness is enforced twice: a single query checks login <em>and</em> email before the
+  insert, and a unique index on both fields rejects a duplicate that slips through when two
+  signups race (<code>err.code === 11000</code> is caught and answered as 409).</p>
+
+  <h2>orders</h2>
+  <p>One document per checkout. This is where the rubric's "reference to the user document"
+  lives: <code>userId</code> holds the MongoDB <code>_id</code> of the user who ordered.</p>
+  <pre><code>{
+  userId: ObjectId("..."),        // reference into users
+  orderDate: ISODate("2026-11-12T..."),
+  customer: { firstName, lastName, email, phone },
+  shippingAddress: { street, city, state, zip },
+  billingAddress:  { street, city, state, zip },
+  payment: { cardType: "Visa", last4: "4242" },   // never the full number, never the CVV
+  items: [
+    { productId: 4, name: "Embarcadero Knit", brand: "Bay Kicks",
+      size: "10", color: "Black", quantity: 2,
+      unitPrice: 84.99, lineTotal: 169.98 }
+  ],
+  subtotal: 169.98,
+  tax: 16.15,                     // 9.5% of the subtotal
+  shippingCost: 0,
+  total: 186.13,
+  status: "Submitted"
+}</code></pre>
+
+  <div class="note">
+    <strong>Prices are re-read at checkout.</strong> The session cart remembers the price a
+    line was added at, but <code>POST /api/orders</code> looks every product up again and
+    builds the order from the database's price. A visitor cannot edit a total by editing the
+    request.
+  </div>
+
+  <h2>What is deliberately not stored</h2>
+  <ul class="plain">
+    <li>The password, in any form other than a bcrypt hash.</li>
+    <li>Card numbers and CVVs — only the card type and the last four digits, for the
+    confirmation page.</li>
+    <li>The cart. It lives in the Express session, so it disappears when the session ends
+    or the server restarts.</li>
+  </ul>
+
+  <h2>Sessions, kept separate from Mongo</h2>
+  <p><code>express-session</code> uses its default in-memory store. That is a deliberate
+  choice for a class project: nothing to install, and the behaviour is easy to demonstrate
+  (restart the server, the cart is empty). A production shop would put the session store in
+  Mongo or Redis so several instances share it.</p>
+</main>
+
+<footer class="site">
+  CS351 Website Development · Project 2 · Group 7 · documentation published with GitHub Pages
+</footer>
+
+</body>
+</html>
